@@ -4,6 +4,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 public class OrderController {
@@ -15,7 +16,13 @@ public class OrderController {
             new Order(5, 2, "Product E"));
 
     @GetMapping
-    public List<Order> getAllOrders() {
+    public List<Order> getAllOrders(@RequestParam(required = false) Integer customerId) {
+        if (customerId != null) {
+            return orders.stream()
+                    .filter(order -> customerId.equals(order.getCustomerId()))
+                    .collect(Collectors.toList());
+        }
+
         return orders;
     }
 
