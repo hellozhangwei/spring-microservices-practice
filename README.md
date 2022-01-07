@@ -312,3 +312,5 @@ And change the getAllOrders method to return a List<Order> wrapped in a Response
 You should see multiple instances of the Order Service
 ###6.3 Make a few GET requests to http://localhost/customers/2/orders 
 and take note of the port in the response. It should change each time.
+##7. Resiliency
+Todo: should use Resilience4J but haven't found a good tutorial
