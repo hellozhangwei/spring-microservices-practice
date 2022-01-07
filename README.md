@@ -250,3 +250,65 @@ declaring a method called getOrdersForCustomer
     }
 ### 5.7 Verify
 Visit http://localhost/customers/2/orders, You should see the same list of orders belonging to Jane Doe
+
+## 6. Client-Side Load Balancing
+### 6.1 Modify the Order Service 
+add the port number on which the service is currently running to the body of the response to prove that load-balancing is enabled.
+Create a ResponseWrapper class:
+
+    public class ResponseWrapper<T> {
+    private final Integer port;
+    private final T data;
+    
+        public ResponseWrapper(final Environment environment, final T data) {
+            String serverPort = environment.getProperty("server.port");
+            this.port = serverPort != null ? Integer.parseInt(serverPort) : null;
+            this.data = data;
+        }
+    
+        public Integer getPort() {
+            return port;
+        }
+    
+        public T getData() {
+            return data;
+        }
+    }
+
+Then inject the Spring Environment into the OrderController:
+
+    @RestController
+    public class OrderController {
+        private final List<Order> orders = Arrays.asList(
+        new Order(1, 1, "Product A"),
+        new Order(2, 1, "Product B"),
+        new Order(3, 2, "Product C"),
+        new Order(4, 1, "Product D"),
+        new Order(5, 2, "Product E"));
+    
+        private final Environment environment;
+    
+        @Autowired
+        public OrderController(final Environment environment) {
+            this.environment = environment;
+        }
+And change the getAllOrders method to return a List<Order> wrapped in a ResponseWrapper:
+
+    @GetMapping
+    public ResponseWrapper<List<Order>> getAllOrders(@RequestParam(required = false) Integer customerId) {
+        if (customerId != null) {
+            return new ResponseWrapper<>(
+                environment,
+                orders.stream()
+                    .filter(order -> customerId.equals(order.getCustomerId()))
+                    .collect(Collectors.toList()));
+        }
+    
+        return new ResponseWrapper<>(environment, orders);
+    }
+###6.2 Launch multiple instances of the Order Service on different ports
+    java -jar target/order-service-0.0.1-SNAPSHOT.jar --server.port=3003
+    java -jar target/order-service-0.0.1-SNAPSHOT.jar --server.port=3004
+You should see multiple instances of the Order Service
+###6.3 Make a few GET requests to http://localhost/customers/2/orders 
+and take note of the port in the response. It should change each time.
